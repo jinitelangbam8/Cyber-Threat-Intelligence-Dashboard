@@ -1,0 +1,6 @@
+{
+  "name": "Cyber Threat Intelligence Dashboard",
+  "description": "An enterprise-grade, real-time AI security monitoring command center featuring threat analyzers, malicious payload check tools, and a real-time global event feed.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
