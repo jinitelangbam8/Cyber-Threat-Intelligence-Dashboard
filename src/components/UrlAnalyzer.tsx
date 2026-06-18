@@ -1,16 +1,18 @@
 import React, { useState } from "react";
 import { 
   Globe, Shield, AlertTriangle, CheckCircle, HelpCircle, 
-  ArrowRight, Key, Lock, Compass, ListChecks, Terminal, Loader2
+  ArrowRight, Key, Lock, Compass, ListChecks, Terminal, Loader2, Trash2, Eye, RefreshCw
 } from "lucide-react";
 import { ThreatScan } from "../types";
 
 interface Props {
+  scans: ThreatScan[];
+  onDeleteScan: (id: string) => void;
   onAddScan: (scan: ThreatScan) => void;
   onToast: (msg: string, isMalicious: boolean) => void;
 }
 
-export default function UrlAnalyzer({ onAddScan, onToast }: Props) {
+export default function UrlAnalyzer({ scans, onDeleteScan, onAddScan, onToast }: Props) {
   const [urlInput, setUrlInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [loadingStep, setLoadingStep] = useState(0);
@@ -298,6 +300,111 @@ export default function UrlAnalyzer({ onAddScan, onToast }: Props) {
 
         </div>
       )}
+
+      {/* Checked URLs History Ledger */}
+      <div className="p-6 rounded-2xl border border-slate-800/50 bg-slate-900/40 backdrop-blur-md shadow-xl mt-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 pb-2 border-b border-slate-800/40 gap-2">
+          <div>
+            <h3 className="text-xs font-bold font-mono uppercase tracking-widest text-slate-300 flex items-center gap-2">
+              <Globe className="h-4 w-4 text-blue-400" />
+              RECORD OF URL CHECKS (HISTORY LEDGER)
+            </h3>
+            <p className="text-[10px] text-slate-500 font-sans mt-0.5">
+              History of URLs checked using this security application. Select past targets to analyze forensics or re-test live endpoints.
+            </p>
+          </div>
+          <span className="text-[10px] font-mono font-bold bg-slate-950/60 border border-slate-800/80 text-blue-400 px-2 py-0.5 rounded self-start sm:self-auto">
+            {scans.filter(s => s.type === "url").length} CHECKS REGISTERED
+          </span>
+        </div>
+
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse text-xs font-mono">
+            <thead>
+              <tr className="border-b border-slate-800/40 text-slate-500">
+                <th className="pb-2 font-bold uppercase">CHECKED URL TARGET</th>
+                <th className="pb-2 text-center font-bold uppercase">SCORE</th>
+                <th className="pb-2 font-bold uppercase">RISK SEVERITY</th>
+                <th className="pb-2 font-bold uppercase">TIMESTAMP</th>
+                <th className="pb-2 text-center font-bold uppercase">OPERATION ACTIONS</th>
+              </tr>
+            </thead>
+            <tbody>
+              {scans.filter(s => s.type === "url").map((scan) => (
+                <tr key={scan.id} className="border-b border-slate-900/45 hover:bg-slate-800/10 transition-all">
+                  <td className="py-3 font-semibold text-slate-200 truncate max-w-[280px]" title={scan.value}>
+                    {scan.value}
+                  </td>
+                  <td className="py-3 text-center text-white font-extrabold">{scan.threatScore}</td>
+                  <td className="py-3">
+                    <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                      scan.riskLevel === "Safe" ? "bg-emerald-950/40 text-emerald-400 border border-emerald-500/20" :
+                      scan.riskLevel === "Low" ? "bg-blue-950/40 text-blue-400 border border-blue-500/20" :
+                      scan.riskLevel === "Medium" ? "bg-amber-950/40 text-amber-400 border border-amber-500/20" :
+                      scan.riskLevel === "High" ? "bg-orange-950/40 text-orange-400 border border-orange-500/20" :
+                      "bg-red-950/40 text-red-500 border border-red-500/15 animate-pulse"
+                    }`}>
+                      {scan.riskLevel.toUpperCase()}
+                    </span>
+                  </td>
+                  <td className="py-3 text-slate-500">
+                    {new Date(scan.timestamp).toLocaleString()}
+                  </td>
+                  <td className="py-3 text-center flex items-center justify-center gap-2">
+                    <button
+                      id={`view-url-history-${scan.id}`}
+                      onClick={() => {
+                        setActiveScan(scan);
+                        setUrlInput(scan.value);
+                        onToast(`Loaded forensics record for ${scan.value}`, false);
+                      }}
+                      className="p-1 px-2 text-slate-400 hover:text-white bg-slate-950 hover:bg-slate-900 border border-slate-800 rounded transition-all cursor-pointer flex items-center gap-1 text-[10px] font-bold"
+                      title="Inspect past Gemini security report"
+                    >
+                      <Eye className="h-3 w-3" />
+                      VIEW REPORT
+                    </button>
+                    <button
+                      id={`recheck-url-history-${scan.id}`}
+                      onClick={async () => {
+                        setUrlInput(scan.value);
+                        onToast(`Re-initiating security scan sequence: ${scan.value}`, false);
+                        // Trigger check immediately via form submission
+                        setTimeout(() => {
+                          const submitBtn = document.getElementById("url-analyzer-submit");
+                          if (submitBtn) {
+                            submitBtn.click();
+                          }
+                        }, 100);
+                      }}
+                      className="p-1 px-2 text-blue-400 hover:text-white bg-blue-950/20 hover:bg-blue-600 border border-blue-800/40 hover:border-blue-500 rounded transition-all cursor-pointer flex items-center gap-1 text-[10px] font-bold"
+                      title="Re-run active system audit"
+                    >
+                      <RefreshCw className="h-3 w-3" />
+                      RE-AUDIT
+                    </button>
+                    <button
+                      id={`delete-url-history-${scan.id}`}
+                      onClick={() => onDeleteScan(scan.id)}
+                      className="p-1 text-slate-500 hover:text-red-400 bg-slate-950 hover:bg-red-950/40 border border-slate-800 hover:border-red-950 rounded transition-all cursor-pointer"
+                      title="Quarantine record"
+                    >
+                      <Trash2 className="h-3 w-3" />
+                    </button>
+                  </td>
+                </tr>
+              ))}
+              {scans.filter(s => s.type === "url").length === 0 && (
+                <tr>
+                  <td colSpan={5} className="py-8 text-center text-slate-500 font-mono">
+                    No historic URL audits found. Type in a web target coordinate link and run a check!
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
 
     </div>
   );

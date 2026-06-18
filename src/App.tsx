@@ -34,6 +34,13 @@ export default function App() {
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [loginEmail, setLoginEmail] = useState("");
 
+  // Edit current personal profile states
+  const [showEditProfileModal, setShowEditProfileModal] = useState(false);
+  const [editProfileName, setEditProfileName] = useState("");
+  const [editProfileEmail, setEditProfileEmail] = useState("");
+  const [editProfileRole, setEditProfileRole] = useState("Administrator");
+  const [editProfileImage, setEditProfileImage] = useState("");
+
   // Toast notification state
   const [toasts, setToasts] = useState<{ id: string; msg: string; isMalicious: boolean }[]>([]);
 
@@ -113,6 +120,22 @@ export default function App() {
     setUser(null);
     triggerToast("Logged out from security operations center console.", false);
     setActiveTab("dashboard");
+  };
+
+  const handleEditProfileSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editProfileName.trim() || !editProfileEmail.trim()) {
+      triggerToast("Name and Email parameters are required to commit credentials.", true);
+      return;
+    }
+    setUser({
+      name: editProfileName.trim(),
+      email: editProfileEmail.trim(),
+      role: editProfileRole,
+      image: editProfileImage.trim() || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200"
+    });
+    setShowEditProfileModal(false);
+    triggerToast("Active session security profile identity parameters updated successfully.", false);
   };
 
   // Nav mapping
@@ -209,13 +232,29 @@ export default function App() {
           <div id="sidebar-user-section" className={`p-4 border-t ${isDarkMode ? "border-slate-800/50" : "border-slate-200"} ${mobileMenuOpen ? "block" : "hidden md:block"}`}>
             {user ? (
               <div className="flex items-center justify-between gap-3 font-mono text-xs">
-                <div className="flex items-center gap-2.5 overflow-hidden">
-                  <img src={user.image} alt={user.name} className="h-8.5 w-8.5 rounded-full border border-slate-700 bg-slate-800 bg-cover" />
+                <button 
+                  id="user-profile-edit-trigger"
+                  onClick={() => {
+                    setEditProfileName(user.name);
+                    setEditProfileEmail(user.email);
+                    setEditProfileRole(user.role);
+                    setEditProfileImage(user.image);
+                    setShowEditProfileModal(true);
+                  }}
+                  className="flex items-center gap-2.5 overflow-hidden text-left hover:opacity-90 transition-all cursor-pointer group flex-1"
+                  title="Click to edit security profile parameters"
+                >
+                  <div className="relative shrink-0">
+                    <img src={user.image} alt={user.name} className="h-8.5 w-8.5 rounded-full border border-slate-700 bg-slate-800 bg-cover group-hover:border-blue-500 transition-all" />
+                    <div className="absolute inset-0 bg-black/60 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all">
+                      <Settings className="h-3 w-3 text-white animate-spin" />
+                    </div>
+                  </div>
                   <div className="overflow-hidden">
-                    <span className="block font-bold text-white truncate" title={user.name}>{user.name}</span>
+                    <span className="block font-bold text-white truncate group-hover:text-blue-400 transition-all" title={user.name}>{user.name}</span>
                     <span className="block text-[9px] text-blue-400 uppercase font-bold tracking-wider" title={user.email}>{user.role}</span>
                   </div>
-                </div>
+                </button>
                 <button 
                   id="user-logout-btn"
                   onClick={handleLogout}
@@ -228,7 +267,10 @@ export default function App() {
             ) : (
               <button 
                 id="user-trigger-login"
-                onClick={() => setShowAuthModal(true)}
+                onClick={() => {
+                  setLoginEmail("");
+                  setShowAuthModal(true);
+                }}
                 className="w-full py-2.5 rounded-lg bg-blue-600/10 hover:bg-blue-600/20 text-blue-400 text-xs font-mono border border-blue-500/20 font-bold flex items-center justify-center gap-2 transition-all cursor-pointer"
               >
                 <LogIn className="h-4 w-4 text-blue-400 animate-pulse" />
@@ -275,7 +317,7 @@ export default function App() {
               <CyberDashboard scans={scans} onNavigate={setActiveTab} />
             )}
             {activeTab === "url" && (
-              <UrlAnalyzer onAddScan={handleAddScan} onToast={triggerToast} />
+              <UrlAnalyzer scans={scans} onDeleteScan={handleDeleteScan} onAddScan={handleAddScan} onToast={triggerToast} />
             )}
             {activeTab === "ip" && (
               <IpIntelligence onAddScan={handleAddScan} onToast={triggerToast} />
@@ -353,6 +395,94 @@ export default function App() {
             <div className="pt-3 border-t border-zinc-900 flex justify-between gap-2 text-[9px] text-zinc-600 font-semibold font-sans">
               <span>SUPPORT INTEGRATES GOOGLE / GITHUB SECURE AUTH METRICS</span>
             </div>
+
+          </div>
+        </div>
+      )}
+
+      {/* Edit Profile Modal Dialog */}
+      {showEditProfileModal && (
+        <div id="profile-editor-popover" className="fixed inset-0 z-50 bg-black/85 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="p-6 rounded-2xl border border-slate-800 bg-slate-950 max-w-sm w-full font-mono text-xs text-slate-300 space-y-4 shadow-2xl animate-fadeIn">
+            
+            <div className="flex items-center justify-between pb-3 border-b border-slate-900">
+              <span className="font-bold text-white uppercase tracking-wider flex items-center gap-2">
+                <Settings className="h-4 w-4 text-blue-400 animate-spin" />
+                MODIFY PROFILE IDENTITY
+              </span>
+              <button 
+                id="close-profile-popover"
+                onClick={() => setShowEditProfileModal(false)}
+                className="p-1 hover:bg-slate-900 rounded text-slate-500 hover:text-white cursor-pointer"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            <p className="text-[10px] text-slate-400 leading-normal font-sans">
+              Modify current active session clearance and operator callsign. Commit updates directly to update local token payloads.
+            </p>
+
+            <form onSubmit={handleEditProfileSubmit} className="space-y-3">
+              <div className="space-y-1">
+                <label className="block text-slate-500 font-bold uppercase text-[9px]">Operator Callsign / Name</label>
+                <input 
+                  id="profile-name-input"
+                  type="text"
+                  value={editProfileName}
+                  onChange={(e) => setEditProfileName(e.target.value)}
+                  placeholder="e.g., Lead Security Architect"
+                  className="w-full p-2.5 rounded-lg border border-slate-800 bg-slate-900 text-xs font-mono text-slate-200 outline-none focus:border-blue-500/50"
+                  required
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="block text-slate-500 font-bold uppercase text-[9px]">Security Email</label>
+                <input 
+                  id="profile-email-input"
+                  type="email"
+                  value={editProfileEmail}
+                  onChange={(e) => setEditProfileEmail(e.target.value)}
+                  placeholder="e.g., lead@cyber.org"
+                  className="w-full p-2.5 rounded-lg border border-slate-800 bg-slate-900 text-xs font-mono text-slate-200 outline-none focus:border-blue-500/50"
+                  required
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="block text-slate-500 font-bold uppercase text-[9px]">Clearance Role</label>
+                <select 
+                  id="profile-role-select"
+                  value={editProfileRole}
+                  onChange={(e) => setEditProfileRole(e.target.value)}
+                  className="w-full p-2.5 rounded-lg border border-slate-800 bg-slate-900 text-xs font-mono text-slate-200 outline-none focus:border-blue-500/50 cursor-pointer"
+                >
+                  <option value="Administrator">Administrator (SOC Master Clearance)</option>
+                  <option value="User">User (Operations / Standard Access)</option>
+                </select>
+              </div>
+
+              <div className="space-y-1">
+                <label className="block text-slate-500 font-bold uppercase text-[9px]">Avatar Image URL</label>
+                <input 
+                  id="profile-image-input"
+                  type="text"
+                  value={editProfileImage}
+                  onChange={(e) => setEditProfileImage(e.target.value)}
+                  placeholder="Paste profile photo image URL..."
+                  className="w-full p-2.5 rounded-lg border border-slate-800 bg-slate-900 text-[11px] font-mono text-slate-200 outline-none focus:border-blue-500/50"
+                />
+              </div>
+
+              <button 
+                id="profile-save-submit-btn"
+                type="submit"
+                className="w-full py-2.5 mt-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs transition-all font-mono tracking-wider cursor-pointer"
+              >
+                SAVE PROFILE UPDATES
+              </button>
+            </form>
 
           </div>
         </div>

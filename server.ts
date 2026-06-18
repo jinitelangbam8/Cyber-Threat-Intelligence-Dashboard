@@ -176,6 +176,62 @@ app.get("/api/admin/users", (req, res) => {
   res.json(db.users);
 });
 
+// API: Create new administrator/user
+app.post("/api/admin/users", (req, res) => {
+  const db = getDB();
+  const { name, email, role, image } = req.body;
+  if (!name || !email) {
+    return res.status(400).json({ error: "Name and Email are required properties" });
+  }
+  const newUser = {
+    id: `usr_${Date.now()}`,
+    name,
+    email,
+    role: role || "User",
+    image: image || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=200"
+  };
+  db.users = db.users || [];
+  db.users.push(newUser);
+  saveDB(db);
+  res.status(201).json(newUser);
+});
+
+// API: Update credential profile
+app.put("/api/admin/users/:id", (req, res) => {
+  const db = getDB();
+  const idToUpdate = req.params.id;
+  const { name, email, role, image } = req.body;
+  
+  db.users = db.users || [];
+  const userIdx = db.users.findIndex((u: any) => u.id === idToUpdate);
+  if (userIdx === -1) {
+    return res.status(404).json({ error: "User profile not found in ledger" });
+  }
+  
+  const updatedUser = {
+    ...db.users[userIdx],
+    name: name !== undefined ? name : db.users[userIdx].name,
+    email: email !== undefined ? email : db.users[userIdx].email,
+    role: role !== undefined ? role : db.users[userIdx].role,
+    image: image !== undefined ? image : db.users[userIdx].image,
+  };
+  
+  db.users[userIdx] = updatedUser;
+  saveDB(db);
+  res.json(updatedUser);
+});
+
+// API: Delete administrator/user
+app.delete("/api/admin/users/:id", (req, res) => {
+  const db = getDB();
+  const idToDelete = req.params.id;
+  db.users = db.users || [];
+  const initialCount = db.users.length;
+  db.users = db.users.filter((u: any) => u.id !== idToDelete);
+  saveDB(db);
+  res.json({ success: db.users.length < initialCount });
+});
+
 // API: URL Threat Analyzer Routing
 app.post("/api/url-analysis", async (req, res) => {
   const { url } = req.body;
